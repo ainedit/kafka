@@ -1,0 +1,47 @@
+# ---------------------------
+# Eclipse / STS
+# ---------------------------
+.classpath
+.project
+.settings/
+.recommenders/
+.apt_generated/
+.apt_generated_test/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# ---------------------------
+# Compilados / Salidas
+# ---------------------------
+/bin/
+/target/
+/build/
+/out/
+
+
+# ---------------------------
+# Logs / temporales
+# ---------------------------
+*.log
+logs/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ---------------------------
+# Cobertura / reports
+# ---------------------------
+jacoco.exec
+/site/
+.surefire-*
+/test-output/
+
+# ---------------------------
+# SO / JVM
+# ---------------------------
+.DS_Store
+Thumbs.db
+hs_err_pid*
+replay_pid*

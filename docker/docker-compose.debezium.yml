@@ -1,0 +1,46 @@
+services:
+  connect:
+    image: debezium/connect:2.6
+    container_name: connect
+    depends_on:
+      - mysql
+      - postgres
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
+      GROUP_ID: "1"
+      CONFIG_STORAGE_TOPIC: _connect_configs
+      OFFSET_STORAGE_TOPIC: _connect_offsets
+      STATUS_STORAGE_TOPIC: _connect_status
+      KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      REST_ADVERTISED_HOST_NAME: connect
+      REST_PORT: 8083
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    command: --default-authentication-plugin=mysql_native_password --binlog-format=ROW --server-id=223344 --binlog_row_image=FULL
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_DATABASE: inventory
+    ports:
+      - "3306:3306"
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: inventory
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command: >
+      postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c shared_preload_libraries=pgoutput
+    ports:
+      - "5432:5432"
+
