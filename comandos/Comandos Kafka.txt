@@ -1,0 +1,28 @@
+Arrancamos Kafka
+desde el directorio de Docker
+docker compose -f … up
+
+Entramos al contenedor
+docker exec -it kafka bash
+
+
+kafka-topics.sh --list --bootstrap-server kafka:29092
+
+kafka-topics.sh --create --topic demotopic --partitions 3 --replication-factor 1 --bootstrap-server kafka:29092
+
+
+#Consumidor
+kafka-console-consumer.sh --topic demotopic --bootstrap-server kafka:29092
+
+#Productor
+kafka-console-producer.sh --topic demotopic --bootstrap-server kafka:29092
+# Escribe líneas y pulsa Enter, por ejemplo:
+# hola
+# {"event":"signup","user":123}
+
+#Consumidor from beginning
+kafka-console-consumer.sh --topic demotopic --from-beginning --bootstrap-server kafka:29092
+
+kafka-topics.sh --describe --topic demotopic --bootstrap-server kafka:29092
+
+#VER EN KAFKA UI
