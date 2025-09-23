@@ -15,7 +15,14 @@ kafka-topics.sh --create --topic demotopic --partitions 3 --replication-factor 1
 kafka-console-consumer.sh --topic demotopic --bootstrap-server kafka:29092
 
 #Productor
+
+#En modo Round-Robin
+kafka-console-producer.sh --bootstrap-server kafka:29092 --topic demotopic --producer-property partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner
+
+#En modo Sticky por defecto
 kafka-console-producer.sh --topic demotopic --bootstrap-server kafka:29092
+
+
 # Escribe líneas y pulsa Enter, por ejemplo:
 # hola
 # {"event":"signup","user":123}
@@ -26,3 +33,84 @@ kafka-console-consumer.sh --topic demotopic --from-beginning --bootstrap-server 
 kafka-topics.sh --describe --topic demotopic --bootstrap-server kafka:29092
 
 #VER EN KAFKA UI
+
+
+Arrancamos cluster con 3 Brokers
+Enviando mensajes a particiones específicas
+===========================================================================================================================
+kafka-topics.sh --bootstrap-server kafka1:29092 --topic topickey --create --partitions 3 --replication-factor 2
+
+kafka-console-producer.sh --broker-list kafka1:29092 --topic topickey --property "parse.key= true" --property "key.separator=:"
+
+#Para leer de una particion determinada e imprimir la clave asociada al mensaje
+kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topickey --from-beginning --partition 0 --property "print.key=true"
+kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topickey --from-beginning --partition 1 --property "print.key=true"
+kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topickey --from-beginning --partition 2 --property "print.key=true"
+
+CONSUMER GROUP MODE
+==========================================
+>kafka-console-consumer.sh
+Documentacion --group
+
+kafka-topics.sh --bootstrap-server kafka1:29092 --topic topicname --create --partitions 3 --replication-factor 3
+
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-first-app
+
+>kafka-console-producer.sh --broker-list kafka1:29092 --topic topicname --producer-property partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner
+
+>escribir
+sale en el consumer
+
+Abro un consumer nuevo, paralelo en una nueva pestaña
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-first-app
+
+si escribimos mensajes desde el producer se reparten porque estan en el mismo grupo
+
+Hago un tercero. Abro un consumer nuevo, paralelo en una nueva pestaña
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-first-app
+
+si escribimos mensajes desde el producer se reparten porque estan en el mismo grupo
+
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-second-app --from-beginning
+Lee todos los mensajes del topic
+
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-second-app
+No se ven los mensajes, el offset ha sido comitado en kafka y sabe cual es el último que ha leido, No sería necesario el from-beginning
+
+>kafka-consumer.sh -group --bootstrap-server localhost:29092 --list
+Saca listado de los consumer groups que hay
+
+>kafka-consumer-groups.sh --bootstrap-server kafka1:29092 --describe --group my-first-app 
+CURRENT-OFFSET -> El ultimo offset que se ha leido en la particion para ese grupo 
+LOG-END-OFFSET -> Por el que va
+LAG -> Los que faltan por leer
+
+Hacer que se acumulen en el grupo my-first-app
+>kafka-consumer-groups.sh --bootstrap-server localhost:29092 --describe --group my-first-app 
+
+Consumir los mensajes y de nuevo ver 
+>kafka-consumer-groups.sh --bootstrap-server localhost:29092 --describe --group my-first-app 
+
+======================================================
+RESET OFFSETS
+======================================================
+>kafka-consumer-groups --> Ayuda, tenemos la opcion --reset-offsets con varias opciones
+	+ Si aplicamos to-earliest consume todos desde el principio
+
+Al ejecutar se resetean los offsets
+>kafka-consumer-groups.sh --bootstrap-server localhost:29092 --group my-first-app --reset-offsets --to-earliest --execute --topic topicname
+
+Veo resumen del grupo
+>kafka-consumer.sh -group --bootstrap-server localhost:29092 --describe --group my-first-app
+
+Si volvemos a leer, ahora se leeran todos los mensajes
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-first-app
+
+Vuelvo a ver resumen del grupo
+>kafka-consumer.sh -group --bootstrap-server localhost:29092 --describe --group my-first-app 
+
+Al ejecutar se resetean los offsets con shift-by, resetea un numero de offsets
+>kafka-consumer-groups.sh --bootstrap-server localhost:29092 --group my-first-app --reset-offsets --shift-by -2 --execute --topic topicname
+
+Si volvemos a leer, ahora se leeran solo 2 mensajes por cada particion (si hay 3 habrá 6 msgs)
+>kafka-console-consumer.sh --bootstrap-server kafka1:29092 --topic topicname --group my-first-app

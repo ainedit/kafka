@@ -1,0 +1,28 @@
+docker exec -it kafka1 bash
+kafka-topics.sh --create --topic usersavro --partitions 3 --replication-factor 1 --bootstrap-server kafka1:29092
+  
+curl -s http://localhost:8081/subjects | jq
+#Devuelve []
+
+curl -s -X POST http://localhost:8081/subjects/users-avro-value/versions -H 'Content-Type: application/vnd.schemaregistry.v1+json' -d '{"schemaType":"AVRO","schema":"{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"}'
+
+curl -s http://localhost:8081/subjects | jq
+curl -s http://localhost:8081/subjects/users-avro-value/versions | jq
+
+
+
+#Producir y consumir con las herramientas Avro (consola)
+docker exec -it schema-registry bash
+
+kafka-avro-console-producer \
+  --bootstrap-server kafka1:29092 \
+  --topic usersavro \
+  --property schema.registry.url=http://schema-registry:8081 \
+  --property value.schema="{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"'
+
+# Escribe líneas JSON (una por mensaje), p. ej.:
+# {"id":"u1","name":"Ana"}
+# {"id":"u2","name":"Luis"}
+
+
+kafka-avro-console-consumer --bootstrap-server kafka1:29092 --topic usersavro --from-beginning --property schema.registry.url=http://schema-registry:8081
