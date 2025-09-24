@@ -101,3 +101,39 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka1:29092,kafka2:29092,kafka3:29092"
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: "http://schema-registry:8081"
 
+  connect:
+      image: confluentinc/cp-kafka-connect:7.6.1
+      container_name: connect
+	  depends_on: [kafka1, kafka2, kafka3, schema-registry]
+      ports:
+        - "8083:8083"   # REST de Connect
+      environment:
+        CONNECT_BOOTSTRAP_SERVERS: "kafka1:29092,kafka2:29093,kafka3:29094"
+        CONNECT_REST_PORT: 8083
+        CONNECT_GROUP_ID: "connect-cluster"
+        CONNECT_LISTENERS: "http://0.0.0.0:8083"
+        CONNECT_REST_ADVERTISED_HOST_NAME: "connect"   # <— clave
+        CONNECT_REST_ADVERTISED_PORT: "8083"           # opcional pero útil
+        
+        # Topics internos de Connect
+        CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+        CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+        CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+        CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+        CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+        CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+
+        # Convertidores básicos (texto)
+        CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+        CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+        
+
+        # Ruta de plugins (añade /opt/connectors para jars externos)
+        CONNECT_PLUGIN_PATH: "/usr/share/java,/opt/connectors"
+
+        # Logging
+        CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+
+      volumes:
+        - ./logs:/data           # carpeta del host con tu fichero de log
+        - ./connectors:/opt/connectors  # (opcional) para cargar conectores extra

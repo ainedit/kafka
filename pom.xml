@@ -9,24 +9,66 @@
     <kafka.version>4.1.0</kafka.version>              <!-- misma versión para clients & streams -->
     <slf4j.version>1.7.36</slf4j.version>             <!-- binding sencillo para logs que cuadra con la transitive de Streams 4.1.0 -->
     <maven.compiler.release>${java.version}</maven.compiler.release>
+    <confluent.version>7.6.1</confluent.version>
+    <avro.version>1.11.3</avro.version>
   </properties>
 
+<dependencyManagement>
   <dependencies>
-    <!-- Productor/Consumidor -->
+    <dependency>
+      <groupId>com.fasterxml.jackson</groupId>
+      <artifactId>jackson-bom</artifactId>
+      <version>2.17.2</version> <!-- o 2.17.x estable que prefieras -->
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+
+  <dependencies>
+  	  <dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-annotations</artifactId>
+  </dependency>
+
+		<!-- Productor/Consumidor -->
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-clients</artifactId>
       <version>${kafka.version}</version>
     </dependency>
 
-    <!-- Kafka Streams -->
+		<!-- Kafka Streams -->
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-streams</artifactId>
       <version>${kafka.version}</version>
     </dependency>
 
-	<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
+		<!-- Confluent Avro Serializer / Deserializer (Schema Registry) -->
+    <dependency>
+      <groupId>io.confluent</groupId>
+      <artifactId>kafka-avro-serializer</artifactId>
+      <version>${confluent.version}</version>
+    </dependency>
+
+		<!-- Avro (para usar SpecificRecord si lo necesitas en tiempo de ejecución) -->
+    <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+      <version>${avro.version}</version>
+    </dependency>
+
+
+		<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
 	<dependency>
 	  <groupId>org.slf4j</groupId>
 	  <artifactId>slf4j-api</artifactId>
@@ -45,8 +87,16 @@
       <version>5.10.2</version>
       <scope>test</scope>
     </dependency>
+    
+
   </dependencies>
   
+  <repositories>
+    <repository>
+      <id>confluent</id>
+      <url>https://packages.confluent.io/maven/</url>
+    </repository>
+  </repositories>
   
   <build>
     <plugins>
@@ -58,9 +108,45 @@
           <release>${maven.compiler.release}</release>
         </configuration>
       </plugin>
-
-      <!-- (Opcional) crear un Uber-JAR ejecutable para apps de Streams -->
-      <!-- <plugin>
+	  <plugin>
+	      <groupId>org.apache.maven.plugins</groupId>
+	      <artifactId>maven-dependency-plugin</artifactId>
+	      <version>3.6.1</version>
+	      <executions>
+	        <execution>
+	          <id>copy-deps</id>
+	          <phase>package</phase>
+	          <goals>
+	            <goal>copy-dependencies</goal>
+	          </goals>
+	          <configuration>
+	            <outputDirectory>${project.basedir}/lib</outputDirectory>
+	            <includeScope>runtime</includeScope>
+	            <excludeTransitive>false</excludeTransitive>
+	            <overWriteReleases>false</overWriteReleases>
+	            <overWriteSnapshots>false</overWriteSnapshots>
+	          </configuration>
+	        </execution>
+	      </executions>
+	    </plugin>
+	    
+	    <plugin>
+	        <groupId>org.apache.avro</groupId>
+	        <artifactId>avro-maven-plugin</artifactId>
+	        <version>${avro.version}</version>
+	        <executions>
+	          <execution>
+	            <phase>generate-sources</phase>
+	            <goals><goal>schema</goal></goals>
+	            <configuration>
+	              <sourceDirectory>${project.basedir}/src/main/avro</sourceDirectory>
+	              <outputDirectory>${project.build.directory}/generated-sources/avro</outputDirectory>
+	            </configuration>
+	          </execution>
+	        </executions>
+	    </plugin>
+			<!-- (Opcional) crear un Uber-JAR ejecutable para apps de Streams -->
+			<!-- <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.5.0</version>

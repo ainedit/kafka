@@ -1,0 +1,14 @@
+## Comandos útiles de Connect
+
+# Ver todo
+curl -s localhost:8083/connectors | jq
+
+# Estado
+curl -s localhost:8083/connectors/<nombre>/status | jq
+
+# Config de un conector
+curl -s localhost:8083/connectors/<nombre> | jq
+
+# Borrar
+curl -s -X DELETE localhost:8083/connectors/<nombre>
+

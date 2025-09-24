@@ -1,0 +1,138 @@
+services:
+  kafka1:
+    image: bitnami/kafka:3.7
+    container_name: kafka1
+    ports:
+      - "9092:9092"             # cliente host -> broker1
+    environment:
+      KAFKA_ENABLE_KRAFT: "yes"
+      #Se puede generar un id del cluster con 'docker run --rm bitnami/kafka:3.7 kafka-storage.sh random-uuid'
+      KAFKA_KRAFT_CLUSTER_ID: "8YRw9Pb9Q4uNUdWGWHjBxg"
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka1:29093,2@kafka2:29093,3@kafka3:29093"
+
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,PLAINTEXT_INTERNAL://:29092,CONTROLLER://:29093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka1:29092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT_INTERNAL"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+      # defaults para 3 brokers
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_MIN_INSYNC_REPLICAS: "2"
+      KAFKA_CFG_NUM_PARTITIONS: "3"
+
+  kafka2:
+    image: bitnami/kafka:3.7
+    container_name: kafka2
+    ports:
+      - "9093:9093"             # cliente host -> broker2
+    environment:
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_KRAFT_CLUSTER_ID: "8YRw9Pb9Q4uNUdWGWHjBxg"
+      KAFKA_CFG_NODE_ID: "2"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka1:29093,2@kafka2:29093,3@kafka3:29093"
+
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9093,PLAINTEXT_INTERNAL://:29092,CONTROLLER://:29093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9093,PLAINTEXT_INTERNAL://kafka2:29092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT_INTERNAL"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_MIN_INSYNC_REPLICAS: "2"
+      KAFKA_CFG_NUM_PARTITIONS: "3"
+
+  kafka3:
+    image: bitnami/kafka:3.7
+    container_name: kafka3
+    ports:
+      - "9094:9094"             # cliente host -> broker3
+    environment:
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_KRAFT_CLUSTER_ID: "8YRw9Pb9Q4uNUdWGWHjBxg"
+      KAFKA_CFG_NODE_ID: "3"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka1:29093,2@kafka2:29093,3@kafka3:29093"
+
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9094,PLAINTEXT_INTERNAL://:29092,CONTROLLER://:29093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9094,PLAINTEXT_INTERNAL://kafka3:29092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT_INTERNAL"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "2"
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "3"
+      KAFKA_CFG_MIN_INSYNC_REPLICAS: "2"
+      KAFKA_CFG_NUM_PARTITIONS: "3"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.1
+    container_name: schema-registry
+    depends_on: [kafka1, kafka2, kafka3]
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka1:29092,kafka2:29092,kafka3:29092"
+      SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: kafka-ui
+    depends_on: [kafka1, kafka2, kafka3, schema-registry]
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "kraft-3b"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka1:29092,kafka2:29092,kafka3:29092"
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: "http://schema-registry:8081"
+
+	  connect:
+	      image: confluentinc/cp-kafka-connect:7.6.1
+	      container_name: connect
+	      depends_on: [kafka1, kafka2, kafka3, schema-registry]
+	      ports:
+	        - "8083:8083"   # REST de Connect
+	      environment:
+	        CONNECT_BOOTSTRAP_SERVERS: "kafka1:29092,kafka2:29092,kafka3:29092"
+	        CONNECT_REST_PORT: 8083
+	        CONNECT_GROUP_ID: "connect-cluster"
+	        CONNECT_LISTENERS: "http://0.0.0.0:8083"
+	        CONNECT_REST_ADVERTISED_HOST_NAME: "connect"   # <— clave
+	        CONNECT_REST_ADVERTISED_PORT: "8083"           # opcional pero útil
+
+	        # Topics internos de Connect
+	        CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+	        CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+	        CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+	        CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+	        CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+	        CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+
+	        # Convertidores básicos (texto)
+	        CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+	        CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+
+	        # Ruta de plugins (añade /opt/connectors para jars externos)
+	        CONNECT_PLUGIN_PATH: "/usr/share/java,/opt/connectors"
+
+	        # Logging
+	        CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+
+	      volumes:
+	        - ./logs:/data           # carpeta del host con tu fichero de log
+	        - ./connectors:/opt/connectors  # (opcional) para cargar conectores extra

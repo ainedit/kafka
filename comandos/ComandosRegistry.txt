@@ -4,7 +4,7 @@ kafka-topics.sh --create --topic usersavro --partitions 3 --replication-factor 1
 curl -s http://localhost:8081/subjects | jq
 #Devuelve []
 
-curl -s -X POST http://localhost:8081/subjects/users-avro-value/versions -H 'Content-Type: application/vnd.schemaregistry.v1+json' -d '{"schemaType":"AVRO","schema":"{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"}'
+curl -s -X POST http://localhost:8081/subjects/users-avro-value/versions -H 'Content-Type: application/json' -d '{"schemaType":"AVRO","schema":"{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"}'
 
 curl -s http://localhost:8081/subjects | jq
 curl -s http://localhost:8081/subjects/users-avro-value/versions | jq
@@ -19,6 +19,16 @@ kafka-avro-console-producer \
   --topic usersavro \
   --property schema.registry.url=http://schema-registry:8081 \
   --property value.schema="{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"'
+
+
+
+SCHEMA=$(curl -s http://localhost:8081/subjects/usersavro-value/versions/latest/schema)
+
+kafka-avro-console-producer \
+  --bootstrap-server kafka1:29092 \
+  --topic usersavro \
+  --property schema.registry.url=http://schema-registry:8081 \
+  --property value.schema=$SCHEMA
 
 # Escribe líneas JSON (una por mensaje), p. ej.:
 # {"id":"u1","name":"Ana"}
