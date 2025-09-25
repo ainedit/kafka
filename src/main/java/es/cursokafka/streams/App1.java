@@ -53,6 +53,7 @@ public class App1 {
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, String> input = builder.stream("input-topic");
         input.mapValues(v -> v == null ? null : v.toUpperCase())
+        	.mapValues(v->v.concat(" dato"))
              .to("output-topic");
 
         Topology topology = builder.build();

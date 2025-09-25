@@ -6,13 +6,16 @@ curl -s http://localhost:8081/subjects | jq
 
 curl -s -X POST http://localhost:8081/subjects/users-avro-value/versions -H 'Content-Type: application/json' -d '{"schemaType":"AVRO","schema":"{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"}'
 
+
+curl -s -X POST http://localhost:8081/subjects/customer-orders-value/versions -H 'Content-Type: application/json' -d '{"schemaType":"AVRO","schema":"{\"type\": \"record\",\"name\": \"OrderEvent\",\"namespace\": \" demo\",\"doc\": \"Evento de pedido con array de códigos\",\"fields\": [{ \"name\": \"orderId\", \"type\": \"string\" },{ \"name\": \"customerId\", \"type\": \"long\" },{\"name\": \"notes\", \"type\": \"string\", \"default\": \"\" },{\"name\": \"items\",\"type\": { \"type\": \"array\", \"items\": \"string\" },\"default\": [] } ] }"'}
+
 curl -s http://localhost:8081/subjects | jq
 curl -s http://localhost:8081/subjects/users-avro-value/versions | jq
 
 
 
 #Producir y consumir con las herramientas Avro (consola)
-docker exec -it schema-registry bash
+	docker exec -it schema-registry bash
 
 kafka-avro-console-producer \
   --bootstrap-server kafka1:29092 \
@@ -21,11 +24,19 @@ kafka-avro-console-producer \
   --property value.schema="{\"type\":\"record\",\"name\":\"User\",\"namespace\":\"demo\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":\"string\"}]}"'
 
 
-
-SCHEMA=$(curl -s http://localhost:8081/subjects/usersavro-value/versions/latest/schema)
-
 kafka-avro-console-producer \
   --bootstrap-server kafka1:29092 \
+  --topic customer-orders \
+  --property schema.registry.url=http://schema-registry:8081 \
+  --property value.schema="{\"type\":\"record\",\"name\":\"OrderEvent\",\"namespace\":\" demo\",\"doc\":\"Evento de pedido con array de códigos\",\"fields\":[{\"name\":\"orderId\",\"type\":\"string\"},{\"name\":\"customerId\",\"type\":\"long\"},{\"name\":\"notes\",\"type\":\"string\",\"default\": \"\"},{\"name\":\"items\",\"type\":{\"type\":\"array\",\"items\":\"string\"},\"default\":[]}]}"
+
+
+
+
+SCHEMA=$(curl -s http://localhost:8081/subjects/users-avro-value/versions/latest/schema)
+
+kafka-avro-console-producer \
+  --bootstrap-server kafka:29092 \
   --topic usersavro \
   --property schema.registry.url=http://schema-registry:8081 \
   --property value.schema=$SCHEMA

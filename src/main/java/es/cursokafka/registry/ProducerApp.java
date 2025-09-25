@@ -32,9 +32,9 @@ public class ProducerApp {
 		p.put("schema.registry.url", SCHEMA_REGISTRY);
 
 		try (KafkaProducer<String, User> producer = new KafkaProducer<>(p)) {
-			sendUser(producer, "u1", "Ana");
-			sendUser(producer, "u2", "Luis");
-			sendUser(producer, "u3", "Marta");
+			sendUser(producer, "u4", "Eva");
+			sendUser(producer, "u5", "Juan");
+			sendUser(producer, "u6", "Marta");
 			producer.flush();
 			System.out.println("Mensajes enviados a " + TOPIC);
 		}

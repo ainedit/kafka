@@ -59,6 +59,7 @@ public class AppStateful {
         KStream<String, String> lines = builder.stream("input-topic");
 
         // 2) Normaliza y tokeniza -> palabras
+        //["en","un","lugar", "de", "la", "Mancha", "de", "cuyo","nombre","no"]
         KStream<String, String> words = lines
                 .flatMapValues(v -> {
                     if (v == null) return Arrays.asList();
